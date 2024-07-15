@@ -15,6 +15,8 @@
 #include <Hash.h>
 #include <Arduino.h>
 #include <microTuple.h>
+#include <L298N.h>
+
 
 // server http => http://192.168.1.177/
 
@@ -24,6 +26,20 @@ long seko = millis();
 #define EKOT(x) Serial.println(S + __FILE__ + ":" + __LINE__ + "[" + (millis()-seko) + "] " + String(x)); seko=millis()
 #define EKOX(x) Serial.println(S + __FILE__ + ":" + __LINE__ + "[" + (millis()-seko) + "] " + #x + " = " + String(x)); seko=millis()
 #define EKO() Serial.println(S + __FILE__+ ":" + __LINE__ + "[" + (millis()-seko) + "]"); seko=millis()
+
+
+/********************************/
+
+// Pin definition
+const unsigned int IN1 = 4; // gpio number => D2
+const unsigned int IN2 = 5; // D1
+const unsigned int EN = 13; // D7
+
+// Create one motor instance
+L298N motor(EN, IN1, IN2);
+
+// Initial speed
+unsigned short theSpeed = 100;
 
 /********************************/
 // webserver
@@ -63,6 +79,8 @@ void handle_speed() {
   auto vi = v.toInt();
   String r = String("set speed to :") + vi;
   EKOX(r);
+  motor.forwardFor(2000, callback);
+  EKO();
   server.sendHeader("Access-Control-Allow-Origin", "*");
   server.send(200, "text/html", r.c_str());
   Serial.println("end");
@@ -117,8 +135,32 @@ int enable1Pin = 13;
 // Setting minimum duty cycle
 int dutyCycle = 60;
 
-void setup() {
+void motorSetup() {
+  for (;;) {
+    EKOT("forward");
+    motor.setSpeed(100);
+    motor.backwardFor(2000, callback);
+    EKO();
+    delay(3000);
+    motor.stop();
 
+    EKOT("backward");
+    motor.setSpeed(100);
+    motor.forwardFor(2000, callback);
+    EKO();
+    delay(3000);
+    motor.stop();
+  }
+}
+
+void callback()
+{
+  EKOT("callback");
+  motor.reset();
+}
+
+
+void setup() {
 
 // put your setup code here, to run once:
   Serial.begin(115200); //Begin Serial at 115200 Baud
@@ -126,7 +168,9 @@ void setup() {
   EKO();
   delay(10);
   webSetup();
-  
+  EKO();
+  motorSetup();
+
   EKOT("ok");
   /*
   EKOX(D1);
@@ -136,16 +180,25 @@ void setup() {
   EKOX(D5);
 */
 
+  EKO();
+  motor.forward();
+  EKO();
+  //motor.forwardFor(5000, callback);
+  EKO();
+  //delay(3000);
+
+  // Stop
+  motor.stop();
+  EKO();
   //Serial.begin(115200);
 }
 
 void loop() {
-
   webLoop();
-
+  //motor.forwardFor(5000, callback);
 }
 
-void motor() {
+void motorx() {
   // sets the pins as outputs:
   pinMode(motor1Pin1, OUTPUT);
   pinMode(motor1Pin2, OUTPUT);
