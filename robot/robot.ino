@@ -39,7 +39,7 @@ const unsigned int EN = 13; // D7
 L298N motor(EN, IN1, IN2);
 
 // Initial speed
-unsigned short theSpeed = 100;
+short theSpeed = 100;
 
 /********************************/
 // webserver
@@ -79,8 +79,15 @@ void handle_speed() {
   auto vi = v.toInt();
   String r = String("set speed to :") + vi;
   EKOX(r);
-  motor.forwardFor(2000, callback);
-  EKO();
+  theSpeed = vi; //motor.forwardFor(2000, callback);
+  motor.setSpeed(abs(theSpeed));
+  EKOX(theSpeed);
+  if (theSpeed > 0) {
+    motor.forward();
+  } else {
+    motor.backward();
+  }
+
   server.sendHeader("Access-Control-Allow-Origin", "*");
   server.send(200, "text/html", r.c_str());
   Serial.println("end");
@@ -124,6 +131,7 @@ void webSetup() {
 
 void webLoop() {
   server.handleClient(); //Handling of incoming client requests
+
 }
 
 
@@ -136,17 +144,19 @@ int enable1Pin = 13;
 int dutyCycle = 60;
 
 void motorSetup() {
+  return;
+
   for (;;) {
     EKOT("forward");
     motor.setSpeed(100);
-    motor.backwardFor(2000, callback);
+    motor.forward();
     EKO();
     delay(3000);
     motor.stop();
 
     EKOT("backward");
     motor.setSpeed(100);
-    motor.forwardFor(2000, callback);
+    motor.backward();
     EKO();
     delay(3000);
     motor.stop();
@@ -195,7 +205,13 @@ void setup() {
 
 void loop() {
   webLoop();
-  //motor.forwardFor(5000, callback);
+  /*
+  if (theSpeed > 0) {
+    motor.forward();
+  } else {
+    motor.backward();
+  }
+  */
 }
 
 void motorx() {
