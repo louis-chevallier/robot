@@ -45,7 +45,7 @@ short theSpeed = 100;
 // webserver
 
 ESP8266WebServer server(80);
-//WebSocketsServer server = WebSocketsServer(80);
+WebSocketsServer server = WebSocketsServer(81);
 
 // chez nous
 const char* ssid = "CHEVALLIER_BORDEAU"; //Enter Wi-Fi SSID
@@ -144,23 +144,21 @@ int enable1Pin = 13;
 int dutyCycle = 60;
 
 void motorSetup() {
-  return;
-
-  for (;;) {
+  
     EKOT("forward");
-    motor.setSpeed(100);
+    motor.setSpeed(200);
     motor.forward();
     EKO();
-    delay(3000);
+    delay(500);
     motor.stop();
 
     EKOT("backward");
-    motor.setSpeed(100);
+    motor.setSpeed(200);
     motor.backward();
     EKO();
-    delay(3000);
+    delay(500);
     motor.stop();
-  }
+
 }
 
 void callback()
