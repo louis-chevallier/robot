@@ -4,7 +4,9 @@
 // install ESPAsyncWebServer (lacamera)
 // install ESPAsyncHTTPUpdateServer ( mohamad Mahdi)
 #include "ESPAsyncWebServer.h"
- 
+#include <L298N.h>
+#include <HC_SR04.h>
+
 /* pinout
 
 Label	GPIO	Input	Output	Notes
@@ -28,10 +30,21 @@ A0	ADC0	Analog Input	X
 String S;
 
 long seko = millis();
-#define EKOT(x) Serial.println(S + __FILE__ + ":" + __LINE__ + "[" + (millis()-seko) + "] " + String(x)); seko=millis()
-#define EKOX(x) Serial.println(S + __FILE__ + ":" + __LINE__ + "[" + (millis()-seko) + "] " + #x + " = " + String(x)); seko=millis()
+#define EKOT(x) Serial.println(S + __FILE__ + ":" + __LINE__ + "[" + (millis()-seko) + "] " + String(x) + "."); seko=millis()
+#define EKOX(x) Serial.println(S + __FILE__ + ":" + __LINE__ + "[" + (millis()-seko) + "] " + #x + "=" + String(x) + "."); seko=millis()
 #define EKO() Serial.println(S + __FILE__+ ":" + __LINE__ + "[" + (millis()-seko) + "]"); seko=millis()
 
+// Pin definition
+const unsigned int IN1 = 4; // gpio number => D2
+const unsigned int IN2 = 5; // D1
+const unsigned int EN = 13; // D7
+
+// Create one motor instance
+L298N motor(EN, IN1, IN2);
+
+
+// Initial speed
+short theSpeed = 100;
 
 char* ssid = "CHEVALLIER_BORDEAU"; //Enter Wi-Fi SSID
 char* password =  "9697abcdea"; //Enter Wi-Fi Password
@@ -39,9 +52,65 @@ char* password =  "9697abcdea"; //Enter Wi-Fi Password
 AsyncWebServer server(80);
 AsyncWebSocket ws("/ws");
 AsyncWebSocketClient * globalClient = NULL;
- 
+
+//////////////////////////////
+// HC SR04
+long lasthcms=0;
+const int trigPin = 12;
+const int echoPin = 14;
+
+//define sound velocity in cm/uS
+#define SOUND_VELOCITY 0.034
+#define CM_TO_INCH 0.393701
+
+long duration;
+float distanceCm;
+float distanceInch;
+
+//HC_SR04<14> sensor(trigPin  );   // sensor with echo and trigger pin
+
+
+//////////////////////////////////////
+
+void motorSetup() {
+
+    EKOT("forward");
+    motor.setSpeed(200);
+    motor.forward();
+    EKO();
+    delay(500);
+    motor.stop();
+
+    EKOT("backward");
+    motor.setSpeed(200);
+    motor.backward();
+    EKO();
+    delay(500);
+    motor.stop();
+}
+
+void command(const String &com, const String &param) {
+  EKOX(com);
+  EKOX(param);
+  if (com == "speed") {
+    EKOX(param.toInt());
+    auto v = param.toInt();
+    if (abs(v) > 40) {
+      if (v>0) { 
+        motor.forward();
+      } else {
+        motor.backward();
+      }
+    } else {
+      motor.stop();
+    }    
+    motor.setSpeed(abs(param.toInt()));
+  } 
+}
+
+
 void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventType type, void * arg, uint8_t *data, size_t len){
-  #EKOX(type);
+  //EKOX(type);
   if(type == WS_EVT_CONNECT){
     EKOT("connect");
     Serial.println("Websocket client connection received");
@@ -52,7 +121,7 @@ void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventT
     Serial.println("Websocket client connection finished");
     globalClient = NULL;
   } else if(type == WS_EVT_DATA){
-    #EKOX(len);
+    //EKOX(len);
     AwsFrameInfo * info = (AwsFrameInfo*)arg;
     String msg = "";
     if(info->final && info->index == 0 && info->len == len){
@@ -70,10 +139,17 @@ void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventT
         }
       }
       EKOX(msg.c_str());
+      auto index = msg.indexOf("?");
+      command(msg.substring(0, index), msg.substring(index+1)); 
+
+
+      /*
       if(info->opcode == WS_TEXT)
         client->text("I got your text message");
       else
         client->binary("I got your binary message");
+      */
+
     } else {
       EKO();
       //message is comprised of multiple frames or the frame is split into multiple packets
@@ -150,7 +226,7 @@ String page(R""""(
   TAG
   <div id="demo"> </div>
   <div class="slidecontainer">
-      <input type="range" min="1" max="100" value="50" class="slider" id="myRange">
+      <input type="range" min="-255" max="255" value="0" class="slider" id="myRange">
   </div>
 
   <script>
@@ -173,8 +249,8 @@ String page(R""""(
 
   slider.oninput = function() {
     output.innerHTML = this.value;
-    ws.send('sliding ' + this.value);
-    console.log(this.value);
+    ws.send('speed?' + this.value);
+    //console.log(this.value);
 
 } 
 
@@ -207,7 +283,7 @@ void setup(){
   EKO();
   ws.onEvent(onWsEvent);
   server.addHandler(&ws);
- EKO();
+  EKO();
   
   server.on("/html", HTTP_GET, [](AsyncWebServerRequest *request){
     EKO();
@@ -223,6 +299,16 @@ void setup(){
   });
   EKO();
   
+  motorSetup();
+
+
+
+  ////////// HC sr04
+  //pinMode(trigPin, OUTPUT); // Sets the trigPin as an Output
+  //pinMode(echoPin, INPUT);
+
+  //sensor.begin();
+
   server.begin();
   EKO();
 }
@@ -230,11 +316,25 @@ void setup(){
 void loop(){
    if(globalClient != NULL && globalClient->status() == WS_CONNECTED){
       //EKO();
+      /*
       auto r = random(0,100); 
       if (r == 1) {
         String randomNumber = String(random(0,100));
         globalClient->text(randomNumber);
       }
+      */
    }
-   delay(40);
+   delay(4);    
+  /*
+   if (millis() > lasthcms + 1000) {
+    auto d = sensor.getDist_cm();
+    EKOX(d);
+    sensor.startMeasure();
+    Serial.println(d);
+    lasthcms = millis();
+    if (d < 5) {
+      //globalClient->text("dist " + d);
+    }
+   }
+   */
 }
