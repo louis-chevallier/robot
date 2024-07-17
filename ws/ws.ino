@@ -9,22 +9,18 @@
 
 /* pinout
 
-Label	GPIO	Input	Output	Notes
-D0	GPIO16	no interrupt	no PWM or I2C support	HIGH at boot
-used to wake up from deep sleep
-D1	GPIO5	OK	OK	often used as SCL (I2C)
-D2	GPIO4	OK	OK	often used as SDA (I2C)
-D3	GPIO0	pulled up	OK	connected to FLASH button, boot fails if pulled LOW
-D4	GPIO2	pulled up	OK	HIGH at boot
-connected to on-board LED, boot fails if pulled LOW
-D5	GPIO14	OK	OK	SPI (SCLK)
-D6	GPIO12	OK	OK	SPI (MISO)
-D7	GPIO13	OK	OK	SPI (MOSI)
-D8	GPIO15	pulled to GND	OK	SPI (CS)
-Boot fails if pulled HIGH
-RX	GPIO3	OK	RX pin	HIGH at boot
-TX	GPIO1	TX pin	OK	HIGH at boot
-debug output at boot, boot fails if pulled LOW
+Label	GPIO	Input           Output                  Notes
+D0	GPIO16	no interrupt	no PWM  or I2C support	HIGH at boot, used to wake up from deep sleep                           HCB
+D1	GPIO05	OK	        OK	                often used as SCL (I2C)                                                 IN2 A
+D2	GPIO04	OK	        OK	                often used as SDA (I2C)                                                 IN1 A
+D3	GPIO00	pulled up	OK	                connected to FLASH button, boot fails if pulled LOW                     IN2 B
+D4	GPIO02	pulled up	OK	                HIGH at boot, connected to on-board LED, boot fails if pulled LOW       IN1 B
+D5	GPIO14	OK	        OK	                SPI (SCLK)                                                              ENB
+D6	GPIO12	OK	        OK	                SPI (MISO)                                                              HCA
+D7	GPIO13	OK	        OK	                SPI (MOSI)                                                              ENA
+D8	GPIO15	pulled to GND	OK	                SPI (CS), Boot fails if pulled HIGH                                     HCC
+RX	GPIO03	OK	        RX pin	                HIGH at boot                                                            Trigger                
+TX	GPIO01	TX pin	        OK	                HIGH at boot, debug output at boot, boot fails if pulled LOW            
 A0	ADC0	Analog Input	X	
 */
 String S;
@@ -35,12 +31,17 @@ long seko = millis();
 #define EKO() Serial.println(S + __FILE__+ ":" + __LINE__ + "[" + (millis()-seko) + "]"); seko=millis()
 
 // Pin definition
-const unsigned int IN1 = 4; // gpio number => D2
-const unsigned int IN2 = 5; // D1
-const unsigned int EN = 13; // D7
+const unsigned int IN1A = 4; // gpio number => D2
+const unsigned int IN2A = 5; // D1
+const unsigned int ENA = 13; // D7
+
+const unsigned int IN1B = 2; // D4
+const unsigned int IN2B = 0; // D3
+const unsigned int ENB = 14; // D5
 
 // Create one motor instance
-L298N motor(EN, IN1, IN2);
+L298N motorA(ENA, IN1A, IN2A);
+L298N motorB(ENB, IN1B, IN2B);
 
 
 // Initial speed
@@ -56,8 +57,10 @@ AsyncWebSocketClient * globalClient = NULL;
 //////////////////////////////
 // HC SR04
 long lasthcms=0;
-const int trigPin = 12;
-const int echoPin = 14;
+const int trigPin = 3; // RX
+#define echoPinA 12 // D6
+#define echoPinB 16 // D0
+#define echoPinC 15 // D8
 
 //define sound velocity in cm/uS
 #define SOUND_VELOCITY 0.034
@@ -67,7 +70,8 @@ long duration;
 float distanceCm;
 float distanceInch;
 
-//HC_SR04<14> sensor(trigPin  );   // sensor with echo and trigger pin
+HC_SR04_BASE *Slaves[] = { new HC_SR04<echoPinA>(trigPin), new HC_SR04<echoPinB>(trigPin)};
+HC_SR04<echoPinC> sonicMaster(trigPin, Slaves, 2);
 
 
 //////////////////////////////////////
@@ -75,18 +79,18 @@ float distanceInch;
 void motorSetup() {
 
     EKOT("forward");
-    motor.setSpeed(200);
-    motor.forward();
+    motorA.setSpeed(200);
+    motorA.forward();
     EKO();
     delay(500);
-    motor.stop();
+    motorA.stop();
 
     EKOT("backward");
-    motor.setSpeed(200);
-    motor.backward();
+    motorA.setSpeed(200);
+    motorA.backward();
     EKO();
     delay(500);
-    motor.stop();
+    motorA.stop();
 }
 
 void command(const String &com, const String &param) {
@@ -97,14 +101,14 @@ void command(const String &com, const String &param) {
     auto v = param.toInt();
     if (abs(v) > 40) {
       if (v>0) { 
-        motor.forward();
+        motorA.forward();
       } else {
-        motor.backward();
+        motorA.backward();
       }
     } else {
-      motor.stop();
+      motorA.stop();
     }    
-    motor.setSpeed(abs(param.toInt()));
+    motorA.setSpeed(abs(param.toInt()));
   } 
 }
 
@@ -304,10 +308,11 @@ void setup(){
 
 
   ////////// HC sr04
-  //pinMode(trigPin, OUTPUT); // Sets the trigPin as an Output
+  ///pinMode(trigPin, OUTPUT); // Sets the trigPin as an Output
   //pinMode(echoPin, INPUT);
 
   //sensor.begin();
+  sonicMaster.beginAsync();
 
   server.begin();
   EKO();
@@ -337,4 +342,19 @@ void loop(){
     }
    }
    */
+
+
+   sonicMaster.startAsync(200000);
+   while(!sonicMaster.isFinished())
+     {
+       // Do something usefulle while measureing
+       // all echo pins which doesnt support interrupt will have a 0 result
+     }
+   
+   for (int i = 0; i < sonicMaster.getNumberOfSensors(); i++) {
+     Serial.print(sonicMaster.getDist_cm(i));
+     Serial.print("  ");
+   }
+
+   
 }
