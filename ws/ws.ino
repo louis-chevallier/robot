@@ -1,14 +1,11 @@
-//#include "WiFi.h"
-//#include "SPIFFS.h"
-
 // install ESPAsyncWebServer (lacamera)
 // install ESPAsyncHTTPUpdateServer ( mohamad Mahdi)
 #include "ESPAsyncWebServer.h"
 #include <L298N.h>
 #include <HC_SR04.h>
 #include "microTuple.h"
-//#include <Vector.h>
-//#include <ArduinoSTL.h>
+#include <List.hpp>
+
 /* pinout
 
 Label	GPIO	Input           Output                  Notes
@@ -28,33 +25,10 @@ A0	ADC0	Analog Input	X
 String S;
 
 long seko = millis();
-#define EKOT(x) Serial.println(S + __FILE__ + ":" + __LINE__ + "[" + (millis()-seko) + "] " + String(x) + "."); seko=millis()
-#define EKOX(x) Serial.println(S + __FILE__ + ":" + __LINE__ + "[" + (millis()-seko) + "] " + #x + "=" + String(x) + "."); seko=millis()
-#define EKO() Serial.println(S + __FILE__+ ":" + __LINE__ + "[" + (millis()-seko) + "]"); seko=millis()
+#define EKOT(x) Serial.println(S + __FILE__ + ":" + String(__LINE__) + "[" + String(millis()-seko) + "] " + String(x) + "."); seko=millis()
+#define EKOX(x) Serial.println(S + __FILE__ + ":" + String(__LINE__) + "[" + String(millis()-seko) + "] " + #x + "=" + String(x) + "."); seko=millis()
+#define EKO() Serial.println(S + __FILE__+ ":" + String(__LINE__) + "[" + String(millis()-seko) + "]"); seko=millis()
 
-// Pin definition
-const unsigned int IN1A = 4; // gpio number => D2
-const unsigned int IN2A = 5; // D1
-const unsigned int ENA = 13; // D7
-
-const unsigned int IN1B = 2; // D4
-const unsigned int IN2B = 0; // D3
-const unsigned int ENB = 14; // D5
-
-// Create one motor instance
-L298N motorA(ENA, IN1A, IN2A);
-L298N motorB(ENB, IN1B, IN2B);
-
-
-// Initial speed
-short theSpeed = 100;
-
-char* ssid = "CHEVALLIER_BORDEAU"; //Enter Wi-Fi SSID
-char* password =  "9697abcdea"; //Enter Wi-Fi Password
- 
-AsyncWebServer server(80);
-AsyncWebSocket ws("/ws");
-AsyncWebSocketClient * globalClient = NULL;
 
 //////////////////////////////
 // HC SR04
@@ -72,19 +46,25 @@ long duration;
 float distanceCm;
 float distanceInch;
 
+struct Element;
+
+List<Element*> elements = List<Element*>();
+
 
 struct Element {
-  Element() { EKO(); }
+  Element() { EKO(); elements.add(this); }
   virtual void loop() {}
   virtual void setup() {}
 };
 
-struct HCSR04 : Element {
+struct HCSR04_Multiple : Element {
   HC_SR04_BASE *Slaves[2] = { new HC_SR04<echoPinA>(trigPin), new HC_SR04<echoPinB>(trigPin) };
   
   HC_SR04<echoPinC> &sonicMaster;
   
-  HCSR04() : sonicMaster(*new HC_SR04<echoPinC>(trigPin, Slaves, 2)) {}
+  HCSR04_Multiple() : sonicMaster(*new HC_SR04<echoPinC>(trigPin, Slaves, 2)) {
+    elements.add(this);
+  }
   
   void setup() {
     //sensor.begin();
@@ -107,42 +87,59 @@ struct HCSR04 : Element {
   
 };
 
-//////////////////////////////////////
 
-void motorSetup(L298N &motor) {
+///////////////////////////////////////
+
+
+// Pin definition
+const unsigned int IN1A = 4; // gpio number => D2
+const unsigned int IN2A = 5; // D1
+const unsigned int ENA = 13; // D7
+
+const unsigned int IN1B = 2; // D4
+const unsigned int IN2B = 0; // D3
+const unsigned int ENB = 14; // D5
+
+
+
+// Initial speed
+short theSpeed = 100;
+
+struct Motor : Element, L298N {
+  Motor(int in1, int in2, int en) : L298N(en, in1, in2) {
+
+  }
+  void setup() {
 
     EKOT("forward");
-    motor.setSpeed(200);
-    motor.forward();
+    setSpeed(200);
+    forward();
     EKO();
     delay(500);
-    motor.stop();
+    stop();
 
     EKOT("backward");
-    motor.setSpeed(200);
-    motor.backward();
+    setSpeed(200);
+    backward();
     EKO();
     delay(500);
-    motor.stop();
+    stop();
     EKO();
 
-}
+  }
+};
 
-void motorSetup() {
-  motorSetup(motorA);
-  motorSetup(motorB);
-}
-
+// Create one motor instance
+Motor motorA(ENA, IN1A, IN2A), motorB(ENB, IN1B, IN2B);
 
 MicroTuple<String, String> split(const String &mess, const String &sep = "?") {
   auto index = mess.indexOf(sep);
   return MicroTuple<String, String>(mess.substring(0, index), mess.substring(index+1));
 } 
 
-
 void command(const String &com, const String &param) {
-  EKOX(com);
-  EKOX(param);
+  //EKOX(com);
+  //EKOX(param);
   auto tt = split(com, "_");
  
   if (tt.get<0>() == "speed") {
@@ -152,7 +149,7 @@ void command(const String &com, const String &param) {
 
 void speed(const String &motor_, const String &param) {
   auto &motor = motor_ == "A" ? motorA : motorB;
-    EKOX(param.toInt());
+    //EKOX(param.toInt());
     auto v = param.toInt();
     if (abs(v) > 40) {
       if (v>0) { 
@@ -166,17 +163,188 @@ void speed(const String &motor_, const String &param) {
     motor.setSpeed(abs(param.toInt()));
 }
 
+ 
+String page(R""""(
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+    <!-- 
+    <meta http-equiv="refresh" content="4">
+    --!>
+    <title>Robot</title>
+    <style>
+    .bb {
+        font-size: 80px;
+    }
+    .slidecontainer {
+      width: 100%; /* Width of the outside container */
+    }
+    </style>
+    <style>
+            html, body {
+                overflow: hidden;
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+            #renderCanvas {
+                width: 100%;
+                height: 100%;
+                touch-action: none;
+            }
+     </style>
+
+
+
+  </head>
+  <body>
+  hello
+  TAG
+  <div id="demo"> </div>
+  <div class="slidecontainer">
+      <input type="range" min="-255" max="255" value="0" class="slider" id="myRangeA">
+      <input type="range" min="-255" max="255" value="0" class="slider" id="myRangeB">
+  </div>  
+  <div class="slidecontainer">
+      <input type="range" min="0" max="100" value="0" class="slider" id="distA">
+  </div>
+
+  <script>
+
+
+  (() => {
+  const ws = new WebSocket('ws://192.168.1.177:80/ws')
+  
+
+  var sliderA = document.getElementById("myRangeA");
+  var sliderB = document.getElementById("myRangeB");
+  var distA = document.getElementById("distA");
+  var output = document.getElementById("demo");
+  output.innerHTML = sliderA.value; // Display the default slider value
+  
+  ws.onopen = () => {
+    console.log('ws opened on browser')
+    ws.send('hello world')
+  }
+
+
+
+  ws.onmessage = (message) => {
+    //console.log(`message received ` + message.data)
+    const s = message.data.split("=");
+    //console.log(s);
+    if (s[0] == "distance_A") {
+      d = parseInt(s[1]);
+      distA.value = d;
+
+      if (sliderA.value > 0) {
+        ws.send('speed_A?' + (255 - d*5));
+      }
+    }
+  }
+
+  sliderA.oninput = function() {
+    output.innerHTML = this.value;
+    ws.send('speed_A?' + this.value);
+    //console.log(this.value);
+
+} 
+  sliderB.oninput = function() {
+    output.innerHTML = this.value;
+    ws.send('speed_B?' + this.value);
+    //console.log(this.value);
+
+} 
+
+function handleOrientation(event) {
+  //updateFieldIfNotNull('Orientation_a', event.alpha);
+  //updateFieldIfNotNull('Orientation_b', event.beta);
+  //updateFieldIfNotNull('Orientation_g', event.gamma);
+  //incrementEventCount();
+  v = event.alpha;
+  console.log(event.data);
+}
+
+  
+  // Request permission for iOS 13+ devices
+  if (
+    DeviceMotionEvent &&
+    typeof DeviceMotionEvent.requestPermission === "function"
+  ) {
+    DeviceMotionEvent.requestPermission();
+  }
+  
+//window.addEventListener("devicemotion", handleMotion);
+window.addEventListener("deviceorientation", handleOrientation);
+console.log("ok");
+})()
+
+  </script>
+
+
+  </body>
+  </html>
+)"""");
+
+struct MyServer : Element {
+
+
+  char* ssid = "CHEVALLIER_BORDEAU"; //Enter Wi-Fi SSID
+  char* password =  "9697abcdea"; //Enter Wi-Fi Password
+ 
+  AsyncWebServer server;
+  AsyncWebSocket ws;
+  AsyncWebSocketClient * globalClient;
+
+    MyServer() : server(80), ws("/ws"), globalClient(NULL) {}
+
+    void setup();
+
+  void loop(){
+   if(globalClient != NULL && globalClient->status() == WS_CONNECTED){
+      //EKO();
+      /*
+      auto r = random(0,100); 
+      if (r == 1) {
+        String randomNumber = String(random(0,100));
+        globalClient->text(randomNumber);
+      }
+      */
+   }
+   delay(4);    
+    /*
+   if (millis() > lasthcms + 1000) {
+    auto d = sensor.getDist_cm();
+    EKOX(d);
+    sensor.startMeasure();
+    Serial.println(d);
+    lasthcms = millis();
+    if (d < 5) {
+      //globalClient->text("dist " + d);
+    }
+   }
+   */
+
+
+   
+  }
+};
+
+MyServer myserver;
+
 void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventType type, void * arg, uint8_t *data, size_t len){
   //EKOX(type);
   if(type == WS_EVT_CONNECT){
     EKOT("connect");
     Serial.println("Websocket client connection received");
-    globalClient = client;
+    myserver.globalClient = client;
  
   } else if(type == WS_EVT_DISCONNECT){
     EKOT("disconnect");
     Serial.println("Websocket client connection finished");
-    globalClient = NULL;
+    myserver.globalClient = NULL;
   } else if(type == WS_EVT_DATA){
     //EKOX(len);
     AwsFrameInfo * info = (AwsFrameInfo*)arg;
@@ -195,7 +363,7 @@ void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventT
           msg += buff ;
         }
       }
-      EKOX(msg.c_str());
+      //EKOX(msg.c_str());
       auto t = split(msg);
       command(t.get<0>(), t.get<1>());
       
@@ -242,165 +410,89 @@ void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventT
   }
 }
 
+
+    void MyServer::setup() {
+      Serial.begin(115200);
  
-String page(R""""(
-<!DOCTYPE html>
-<html>
-  <head>
-    <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
-    <!-- 
-    <meta http-equiv="refresh" content="4">
-    --!>
-    <title>Robot</title>
-    <style>
-    .bb {
-        font-size: 80px;
-    }
-    .slidecontainer {
-      width: 100%; /* Width of the outside container */
-    }
-    </style>
-    <style>
-            html, body {
-                overflow: hidden;
-                width: 100%;
-                height: 100%;
-                margin: 0;
-                padding: 0;
-            }
-            #renderCanvas {
-                width: 100%;
-                height: 100%;
-                touch-action: none;
-            }
-     </style>
-
-
-
-  </head>
-  <body>
-  hello
-  TAG
-  <div id="demo"> </div>
-  <div class="slidecontainer">
-      <input type="range" min="-255" max="255" value="0" class="slider" id="myRangeA">
-      <input type="range" min="-255" max="255" value="0" class="slider" id="myRangeB">
-  </div>
-
-  <script>
-
-
-  (() => {
-  const ws = new WebSocket('ws://192.168.1.177:80/ws')
-  ws.onopen = () => {
-    console.log('ws opened on browser')
-    ws.send('hello world')
-  }
-
-  ws.onmessage = (message) => {
-    console.log(`message received ` + message.data)
-  }
-
-  var sliderA = document.getElementById("myRangeA");
-  var sliderB = document.getElementById("myRangeB");
-  var output = document.getElementById("demo");
-  output.innerHTML = sliderA.value; // Display the default slider value
-
-  sliderA.oninput = function() {
-    output.innerHTML = this.value;
-    ws.send('speed_A?' + this.value);
-    //console.log(this.value);
-
-} 
-  sliderB.oninput = function() {
-    output.innerHTML = this.value;
-    ws.send('speed_B?' + this.value);
-    //console.log(this.value);
-
-} 
-
-})()
-
-  </script>
-
-
-  </body>
-  </html>
-)"""");
-
-
-void setup(){
-  Serial.begin(115200);
- 
-  if(!SPIFFS.begin()){
-     Serial.println("An Error has occurred while mounting SPIFFS");
-     return;
-  }
- 
-  WiFi.begin(ssid, password);
- 
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(1000);
-    Serial.println("Connecting to WiFi..");
-  }
- 
-  Serial.println(WiFi.localIP());
-  EKO();
-  ws.onEvent(onWsEvent);
-  server.addHandler(&ws);
-  EKO();
-  
-  server.on("/html", HTTP_GET, [](AsyncWebServerRequest *request){
-    EKO();
-    request->send(200, "text/html", page);
-    //request->send(SPIFFS, "/ws.html", "text/html");
-  });
-
-   server.on("/speed", HTTP_GET, [](AsyncWebServerRequest *request){
-    EKO();
-    request->send(200, "text/plain", "speed received");
-
-    //request->send(SPIFFS, "/ws.html", "text/html");
-  });
-  EKO();
-  
-  motorSetup();
-
-
-
-  ////////// HC sr04
-  ///pinMode(trigPin, OUTPUT); // Sets the trigPin as an Output
-  //pinMode(echoPin, INPUT);
-
-  server.begin();
-  EKO();
-}
- 
-void loop(){
-   if(globalClient != NULL && globalClient->status() == WS_CONNECTED){
-      //EKO();
-      /*
-      auto r = random(0,100); 
-      if (r == 1) {
-        String randomNumber = String(random(0,100));
-        globalClient->text(randomNumber);
+      if(!SPIFFS.begin()){
+        Serial.println("An Error has occurred while mounting SPIFFS");
+        return;
       }
-      */
-   }
-   delay(4);    
-  /*
-   if (millis() > lasthcms + 1000) {
-    auto d = sensor.getDist_cm();
-    EKOX(d);
-    sensor.startMeasure();
-    Serial.println(d);
-    lasthcms = millis();
-    if (d < 5) {
-      //globalClient->text("dist " + d);
-    }
-   }
-   */
+ 
+      WiFi.begin(ssid, password);
+ 
+      while (WiFi.status() != WL_CONNECTED) {
+        delay(1000);
+        Serial.println("Connecting to WiFi..");
+      }
+ 
+      Serial.println(WiFi.localIP());
+      EKO();
+      ws.onEvent(onWsEvent);
+      server.addHandler(&ws);
+      EKO();
+  
+      server.on("/html", HTTP_GET, [](AsyncWebServerRequest *request){
+        EKO();
+        request->send(200, "text/html", page);
+        //request->send(SPIFFS, "/ws.html", "text/html");
+      });
+
+      server.on("/speed", HTTP_GET, [](AsyncWebServerRequest *request){
+        EKO();
+        request->send(200, "text/plain", "speed received");
+
+        //request->send(SPIFFS, "/ws.html", "text/html");
+      });
+      EKO();
+  
+      server.begin();
+      EKO();
+  }
 
 
-   
+
+
+struct HCSR04 : Element {
+  HC_SR04<echoPinA> &sensor;
+  int lastthcms;
+  HCSR04() : sensor(*new HC_SR04<echoPinA>(trigPin)), lastthcms(0) {
+    
+  }
+  
+  void setup() {
+    //sensor.begin();
+    sensor.begin();
+  }  
+    
+  void loop() {
+    if (millis() > lasthcms + 100) {
+      sensor.startMeasure();
+      auto d = sensor.getDist_cm();
+      //EKOX(d);
+      lasthcms = millis();
+      if (d < 50 && myserver.globalClient != NULL) {
+        //EKO();
+        //myserver.globalClient->text(String("distance=") + d);
+        myserver.globalClient->text(String("distance_A=") + d);
+      }
+   }
+  }
+  
+};
+
+HCSR04 hcsr04;
+
+
+void setup() {
+  for (int i = 0; i < elements.getSize(); i++) {
+    elements[i]->setup();
+  }
 }
+void loop() {
+  for (int i = 0; i < elements.getSize(); i++) {
+    elements[i]->loop();
+  }
+}
+
+
