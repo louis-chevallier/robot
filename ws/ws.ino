@@ -6,15 +6,17 @@
 #include "ESPAsyncWebServer.h"
 #include <L298N.h>
 #include <HC_SR04.h>
-
+#include "microTuple.h"
+//#include <Vector.h>
+//#include <ArduinoSTL.h>
 /* pinout
 
 Label	GPIO	Input           Output                  Notes
 D0	GPIO16	no interrupt	no PWM  or I2C support	HIGH at boot, used to wake up from deep sleep                           HCB
 D1	GPIO05	OK	        OK	                often used as SCL (I2C)                                                 IN2 A
 D2	GPIO04	OK	        OK	                often used as SDA (I2C)                                                 IN1 A
-D3	GPIO00	pulled up	OK	                connected to FLASH button, boot fails if pulled LOW                     IN2 B
-D4	GPIO02	pulled up	OK	                HIGH at boot, connected to on-board LED, boot fails if pulled LOW       IN1 B
+D3	GPIO00	pulled up	OK	                connected to FLASH button, boot fails if pulled LOW                     IN2 B in4
+D4	GPIO02	pulled up	OK	                HIGH at boot, connected to on-board LED, boot fails if pulled LOW       IN1 B in3
 D5	GPIO14	OK	        OK	                SPI (SCLK)                                                              ENB
 D6	GPIO12	OK	        OK	                SPI (MISO)                                                              HCA
 D7	GPIO13	OK	        OK	                SPI (MOSI)                                                              ENA
@@ -70,48 +72,99 @@ long duration;
 float distanceCm;
 float distanceInch;
 
-HC_SR04_BASE *Slaves[] = { new HC_SR04<echoPinA>(trigPin), new HC_SR04<echoPinB>(trigPin)};
-HC_SR04<echoPinC> sonicMaster(trigPin, Slaves, 2);
 
+struct Element {
+  Element() { EKO(); }
+  virtual void loop() {}
+  virtual void setup() {}
+};
+
+struct HCSR04 : Element {
+  HC_SR04_BASE *Slaves[2] = { new HC_SR04<echoPinA>(trigPin), new HC_SR04<echoPinB>(trigPin) };
+  
+  HC_SR04<echoPinC> &sonicMaster;
+  
+  HCSR04() : sonicMaster(*new HC_SR04<echoPinC>(trigPin, Slaves, 2)) {}
+  
+  void setup() {
+    //sensor.begin();
+    sonicMaster.beginAsync();
+  }  
+    
+  void loop() {
+    sonicMaster.startAsync(200000);
+    while(!sonicMaster.isFinished())
+    {
+       // Do something usefulle while measureing
+       // all echo pins which doesnt support interrupt will have a 0 result
+    }
+   
+    for (int i = 0; i < sonicMaster.getNumberOfSensors(); i++) {
+      Serial.print(sonicMaster.getDist_cm(i));
+      Serial.print("  ");
+    }
+  }
+  
+};
 
 //////////////////////////////////////
 
-void motorSetup() {
+void motorSetup(L298N &motor) {
 
     EKOT("forward");
-    motorA.setSpeed(200);
-    motorA.forward();
+    motor.setSpeed(200);
+    motor.forward();
     EKO();
     delay(500);
-    motorA.stop();
+    motor.stop();
 
     EKOT("backward");
-    motorA.setSpeed(200);
-    motorA.backward();
+    motor.setSpeed(200);
+    motor.backward();
     EKO();
     delay(500);
-    motorA.stop();
+    motor.stop();
+    EKO();
+
 }
+
+void motorSetup() {
+  motorSetup(motorA);
+  motorSetup(motorB);
+}
+
+
+MicroTuple<String, String> split(const String &mess, const String &sep = "?") {
+  auto index = mess.indexOf(sep);
+  return MicroTuple<String, String>(mess.substring(0, index), mess.substring(index+1));
+} 
+
 
 void command(const String &com, const String &param) {
   EKOX(com);
   EKOX(param);
-  if (com == "speed") {
+  auto tt = split(com, "_");
+ 
+  if (tt.get<0>() == "speed") {
+    speed(tt.get<1>(), param);
+  }
+}
+
+void speed(const String &motor_, const String &param) {
+  auto &motor = motor_ == "A" ? motorA : motorB;
     EKOX(param.toInt());
     auto v = param.toInt();
     if (abs(v) > 40) {
       if (v>0) { 
-        motorA.forward();
+        motor.forward();
       } else {
-        motorA.backward();
+        motor.backward();
       }
     } else {
-      motorA.stop();
+      motor.stop();
     }    
-    motorA.setSpeed(abs(param.toInt()));
-  } 
+    motor.setSpeed(abs(param.toInt()));
 }
-
 
 void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventType type, void * arg, uint8_t *data, size_t len){
   //EKOX(type);
@@ -143,9 +196,9 @@ void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventT
         }
       }
       EKOX(msg.c_str());
-      auto index = msg.indexOf("?");
-      command(msg.substring(0, index), msg.substring(index+1)); 
-
+      auto t = split(msg);
+      command(t.get<0>(), t.get<1>());
+      
 
       /*
       if(info->opcode == WS_TEXT)
@@ -230,7 +283,8 @@ String page(R""""(
   TAG
   <div id="demo"> </div>
   <div class="slidecontainer">
-      <input type="range" min="-255" max="255" value="0" class="slider" id="myRange">
+      <input type="range" min="-255" max="255" value="0" class="slider" id="myRangeA">
+      <input type="range" min="-255" max="255" value="0" class="slider" id="myRangeB">
   </div>
 
   <script>
@@ -247,13 +301,20 @@ String page(R""""(
     console.log(`message received ` + message.data)
   }
 
-  var slider = document.getElementById("myRange");
+  var sliderA = document.getElementById("myRangeA");
+  var sliderB = document.getElementById("myRangeB");
   var output = document.getElementById("demo");
-  output.innerHTML = slider.value; // Display the default slider value
+  output.innerHTML = sliderA.value; // Display the default slider value
 
-  slider.oninput = function() {
+  sliderA.oninput = function() {
     output.innerHTML = this.value;
-    ws.send('speed?' + this.value);
+    ws.send('speed_A?' + this.value);
+    //console.log(this.value);
+
+} 
+  sliderB.oninput = function() {
+    output.innerHTML = this.value;
+    ws.send('speed_B?' + this.value);
     //console.log(this.value);
 
 } 
@@ -311,9 +372,6 @@ void setup(){
   ///pinMode(trigPin, OUTPUT); // Sets the trigPin as an Output
   //pinMode(echoPin, INPUT);
 
-  //sensor.begin();
-  sonicMaster.beginAsync();
-
   server.begin();
   EKO();
 }
@@ -343,18 +401,6 @@ void loop(){
    }
    */
 
-
-   sonicMaster.startAsync(200000);
-   while(!sonicMaster.isFinished())
-     {
-       // Do something usefulle while measureing
-       // all echo pins which doesnt support interrupt will have a 0 result
-     }
-   
-   for (int i = 0; i < sonicMaster.getNumberOfSensors(); i++) {
-     Serial.print(sonicMaster.getDist_cm(i));
-     Serial.print("  ");
-   }
 
    
 }
