@@ -278,19 +278,8 @@ void MyServer::setup() {
     delay(1000);
     EKOT("Connecting to WiFi..");
   }
-  
   Serial.println(WiFi.localIP());
-
-
-  EKOX(jscode.length());
-  EKOX(page.length());
-  
-  EKOX(jscode);
-  EKOX(page);
-  
   page.replace("JSCODE", jscode);
-  EKOX(page);
-  
   
   EKO();
   ws.onEvent(onWsEvent);
