@@ -1,0 +1,42 @@
+Name                          Installed Available Location Description
+Adafruit BusIO                1.16.1    -         user     -
+Adafruit Circuit Playground   1.12.0    -         user     -
+Adafruit GFX Library          1.11.9    -         user     -
+Adafruit GPS Library          1.7.5     -         user     -
+Adafruit ILI9341              1.6.1     -         user     -
+Adafruit LED Backpack Library 1.5.1     -         user     -
+Adafruit SleepyDog Library    1.6.5     -         user     -
+Adafruit STMPE610             1.1.6     -         user     -
+Adafruit TouchScreen          1.1.5     -         user     -
+Adafruit Unified Sensor       1.1.14    -         user     -
+Adafruit Zero DMA Library     1.1.3     -         user     -
+Adafruit Zero FFT Library     1.0.6     -         user     -
+Adafruit Zero PDM Library     1.2.3     -         user     -
+ArduinoJson                   7.1.0     -         user     -
+ArduinoQueue                  1.2.5     -         user     -
+ArduinoSTL                    1.3.3     -         user     -
+AsyncTCP                      1.1.4     -         user     -
+DallasTemperature             3.9.0     -         user     -
+DHT sensor library            1.4.6     -         user     -
+DoubleResetDetector_Generic   1.8.1     -         user     -
+ESP8266TimerInterrupt         1.6.0     -         user     -
+ESPAsyncHTTPUpdateServer      2.0.0     -         user     -
+ESPAsyncTCP                   1.2.4     -         user     -
+ESPAsyncWebServer             3.1.0     -         user     -
+Ethernet                      2.0.2     -         user     -
+FlashStorage_RTL8720          1.1.0     -         user     -
+FlashStorage_SAMD             1.3.2     -         user     -
+FlashStorage_STM32            1.2.0     -         user     -
+FlashStorage_STM32F1          1.1.0     -         user     -
+Functional-Vlpp               1.0.2     -         user     -
+HC_SR04                       1.0.1     -         user     -
+L298N                         2.0.3     -         user     -
+LinkedList                    1.3.3     -         user     -
+List                          3.0.1     -         user     -
+MicroTuple                    1.0       -         user     -
+OneWire                       2.3.8     -         user     -
+SimplyAtomic                  1.0       -         user     -
+SinricPro_Generic             2.8.5     -         user     -
+STM32duino LwIP               2.1.3     -         user     -
+WiFi                          1.2.7     -         user     -
+

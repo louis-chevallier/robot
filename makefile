@@ -30,5 +30,5 @@ upload :
 lib :
 	arduino-cli lib search HC_SR04
 #	arduino-cli lib install FTDebouncer
-
+	arduino-cli lib list > libs.list
 
