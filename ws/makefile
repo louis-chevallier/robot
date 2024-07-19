@@ -1,0 +1,4 @@
+
+
+start :
+	cd ..; make start

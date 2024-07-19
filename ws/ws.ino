@@ -163,136 +163,16 @@ void speed(const String &motor_, const String &param) {
     motor.setSpeed(abs(param.toInt()));
 }
 
- 
+
 String page(R""""(
-<!DOCTYPE html>
-<html>
-  <head>
-    <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
-    <!-- 
-    <meta http-equiv="refresh" content="4">
-    --!>
-    <title>Robot</title>
-    <style>
-    .bb {
-        font-size: 80px;
-    }
-    .slidecontainer {
-      width: 100%; /* Width of the outside container */
-    }
-    </style>
-    <style>
-            html, body {
-                overflow: hidden;
-                width: 100%;
-                height: 100%;
-                margin: 0;
-                padding: 0;
-            }
-            #renderCanvas {
-                width: 100%;
-                height: 100%;
-                touch-action: none;
-            }
-     </style>
-
-
-
-  </head>
-  <body>
-  hello
-  TAG
-  <div id="demo"> </div>
-  <div class="slidecontainer">
-      <input type="range" min="-255" max="255" value="0" class="slider" id="myRangeA">
-      <input type="range" min="-255" max="255" value="0" class="slider" id="myRangeB">
-  </div>  
-  <div class="slidecontainer">
-      <input type="range" min="0" max="100" value="0" class="slider" id="distA">
-  </div>
-
-  <script>
-
-
-  (() => {
-  const ws = new WebSocket('ws://192.168.1.177:80/ws')
-  
-
-  var sliderA = document.getElementById("myRangeA");
-  var sliderB = document.getElementById("myRangeB");
-  var distA = document.getElementById("distA");
-  var output = document.getElementById("demo");
-  output.innerHTML = sliderA.value; // Display the default slider value
-  
-  ws.onopen = () => {
-    console.log('ws opened on browser')
-    ws.send('hello world')
-  }
-
-
-
-  ws.onmessage = (message) => {
-    //console.log(`message received ` + message.data)
-    const s = message.data.split("=");
-    //console.log(s);
-    if (s[0] == "distance_A") {
-      d = parseInt(s[1]);
-      distA.value = d;
-
-      if (sliderA.value > 0) {
-        ws.send('speed_A?' + (255 - d*5));
-      }
-    }
-  }
-
-  sliderA.oninput = function() {
-    output.innerHTML = this.value;
-    ws.send('speed_A?' + this.value);
-    //console.log(this.value);
-
-} 
-  sliderB.oninput = function() {
-    output.innerHTML = this.value;
-    ws.send('speed_B?' + this.value);
-    //console.log(this.value);
-
-} 
-
-function handleOrientation(event) {
-  //updateFieldIfNotNull('Orientation_a', event.alpha);
-  //updateFieldIfNotNull('Orientation_b', event.beta);
-  //updateFieldIfNotNull('Orientation_g', event.gamma);
-  //incrementEventCount();
-  v = event.alpha;
-  console.log(event.data);
-}
-
-  
-  // Request permission for iOS 13+ devices
-  if (
-    DeviceMotionEvent &&
-    typeof DeviceMotionEvent.requestPermission === "function"
-  ) {
-    DeviceMotionEvent.requestPermission();
-  }
-  
-//window.addEventListener("devicemotion", handleMotion);
-window.addEventListener("deviceorientation", handleOrientation);
-console.log("ok");
-})()
-
-  </script>
-
-
-  </body>
-  </html>
+#include "html.h"
 )"""");
 
 struct MyServer : Element {
 
 
-  char* ssid = "CHEVALLIER_BORDEAU"; //Enter Wi-Fi SSID
-  char* password =  "9697abcdea"; //Enter Wi-Fi Password
+  const char* ssid = "CHEVALLIER_BORDEAU"; //Enter Wi-Fi SSID
+  const char* password =  "9697abcdea"; //Enter Wi-Fi Password
  
   AsyncWebServer server;
   AsyncWebSocket ws;
