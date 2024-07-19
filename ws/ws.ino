@@ -25,9 +25,9 @@ A0	ADC0	Analog Input	X
 String S;
 
 long seko = millis();
-#define EKOT(x) Serial.println(S + __FILE__ + ":" + String(__LINE__) + "[" + String(millis()-seko) + "] " + String(x) + "."); seko=millis()
-#define EKOX(x) Serial.println(S + __FILE__ + ":" + String(__LINE__) + "[" + String(millis()-seko) + "] " + #x + "=" + String(x) + "."); seko=millis()
-#define EKO() Serial.println(S + __FILE__+ ":" + String(__LINE__) + "[" + String(millis()-seko) + "]"); seko=millis()
+#define EKOT(x) Serial.println(S + __FILE__ + ":" + String(__LINE__) + ": [" + String(millis()-seko) + "ms] " + String(x) + "."); seko=millis()
+#define EKOX(x) Serial.println(S + __FILE__ + ":" + String(__LINE__) + ": [" + String(millis()-seko) + "ms] " + #x + "=" + String(x) + "."); seko=millis()
+#define EKO()   Serial.println(S + __FILE__ + ":" + String(__LINE__) + ": [" + String(millis()-seko) + "ms]"); seko=millis()
 
 
 //////////////////////////////
