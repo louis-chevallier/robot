@@ -8,19 +8,19 @@
 
 /* pinout
 
-Label	GPIO	Input           Output                  Notes
-D0	GPIO16	no interrupt	no PWM  or I2C support	HIGH at boot, used to wake up from deep sleep                           HCB
-D1	GPIO05	OK	        OK	                often used as SCL (I2C)                                                 IN2 A
-D2	GPIO04	OK	        OK	                often used as SDA (I2C)                                                 IN1 A
-D3	GPIO00	pulled up	OK	                connected to FLASH button, boot fails if pulled LOW                     IN2 B in4
-D4	GPIO02	pulled up	OK	                HIGH at boot, connected to on-board LED, boot fails if pulled LOW       IN1 B in3
-D5	GPIO14	OK	        OK	                SPI (SCLK)                                                              ENB
-D6	GPIO12	OK	        OK	                SPI (MISO)                                                              HCA
-D7	GPIO13	OK	        OK	                SPI (MOSI)                                                              ENA
-D8	GPIO15	pulled to GND	OK	                SPI (CS), Boot fails if pulled HIGH                                     HCC
-RX	GPIO03	OK	        RX pin	                HIGH at boot                                                            Trigger                
-TX	GPIO01	TX pin	        OK	                HIGH at boot, debug output at boot, boot fails if pulled LOW            
-A0	ADC0	Analog Input	X	
+   Label	GPIO	Input           Output                  Notes
+   D0	GPIO16	no interrupt	no PWM  or I2C support	HIGH at boot, used to wake up from deep sleep                           HCB
+   D1	GPIO05	OK	        OK	                often used as SCL (I2C)                                                 IN2 A
+   D2	GPIO04	OK	        OK	                often used as SDA (I2C)                                                 IN1 A
+   D3	GPIO00	pulled up	OK	                connected to FLASH button, boot fails if pulled LOW                     IN2 B in4
+   D4	GPIO02	pulled up	OK	                HIGH at boot, connected to on-board LED, boot fails if pulled LOW       IN1 B in3
+   D5	GPIO14	OK	        OK	                SPI (SCLK)                                                              ENB
+   D6	GPIO12	OK	        OK	                SPI (MISO)                                                              HCA
+   D7	GPIO13	OK	        OK	                SPI (MOSI)                                                              ENA
+   D8	GPIO15	pulled to GND	OK	                SPI (CS), Boot fails if pulled HIGH                                     HCC
+   RX	GPIO03	OK	        RX pin	                HIGH at boot                                                            Trigger                
+   TX	GPIO01	TX pin	        OK	                HIGH at boot, debug output at boot, boot fails if pulled LOW            
+   A0	ADC0	Analog Input	X	
 */
 String S;
 
@@ -57,35 +57,7 @@ struct Element {
   virtual void setup() {}
 };
 
-struct HCSR04_Multiple : Element {
-  HC_SR04_BASE *Slaves[2] = { new HC_SR04<echoPinA>(trigPin), new HC_SR04<echoPinB>(trigPin) };
-  
-  HC_SR04<echoPinC> &sonicMaster;
-  
-  HCSR04_Multiple() : sonicMaster(*new HC_SR04<echoPinC>(trigPin, Slaves, 2)) {
-    elements.add(this);
-  }
-  
-  void setup() {
-    //sensor.begin();
-    sonicMaster.beginAsync();
-  }  
-    
-  void loop() {
-    sonicMaster.startAsync(200000);
-    while(!sonicMaster.isFinished())
-    {
-       // Do something usefulle while measureing
-       // all echo pins which doesnt support interrupt will have a 0 result
-    }
-   
-    for (int i = 0; i < sonicMaster.getNumberOfSensors(); i++) {
-      Serial.print(sonicMaster.getDist_cm(i));
-      Serial.print("  ");
-    }
-  }
-  
-};
+
 
 
 ///////////////////////////////////////
@@ -106,7 +78,7 @@ const unsigned int ENB = 14; // D5
 short theSpeed = 100;
 
 struct Motor : Element, L298N {
-  Motor(int in1, int in2, int en) : L298N(en, in1, in2) {
+ Motor(int in1, int in2, int en) : L298N(en, in1, in2) {
 
   }
   void setup() {
@@ -149,24 +121,21 @@ void command(const String &com, const String &param) {
 
 void speed(const String &motor_, const String &param) {
   auto &motor = motor_ == "A" ? motorA : motorB;
-    //EKOX(param.toInt());
-    auto v = param.toInt();
-    if (abs(v) > 40) {
-      if (v>0) { 
-        motor.forward();
-      } else {
-        motor.backward();
-      }
+  //EKOX(param.toInt());
+  auto v = param.toInt();
+  if (abs(v) > 40) {
+    if (v>0) { 
+      motor.forward();
     } else {
-      motor.stop();
-    }    
-    motor.setSpeed(abs(param.toInt()));
+      motor.backward();
+    }
+  } else {
+    motor.stop();
+  }    
+  motor.setSpeed(abs(param.toInt()));
 }
 
 
-String page(R""""(
-#include "html.h"
-)"""");
 
 struct MyServer : Element {
 
@@ -178,34 +147,34 @@ struct MyServer : Element {
   AsyncWebSocket ws;
   AsyncWebSocketClient * globalClient;
 
-    MyServer() : server(80), ws("/ws"), globalClient(NULL) {}
+ MyServer() : server(80), ws("/ws"), globalClient(NULL) {}
 
-    void setup();
+  void setup();
 
   void loop(){
-   if(globalClient != NULL && globalClient->status() == WS_CONNECTED){
+    if(globalClient != NULL && globalClient->status() == WS_CONNECTED){
       //EKO();
       /*
-      auto r = random(0,100); 
-      if (r == 1) {
+        auto r = random(0,100); 
+        if (r == 1) {
         String randomNumber = String(random(0,100));
         globalClient->text(randomNumber);
-      }
+        }
       */
-   }
-   delay(4);    
-    /*
-   if (millis() > lasthcms + 1000) {
-    auto d = sensor.getDist_cm();
-    EKOX(d);
-    sensor.startMeasure();
-    Serial.println(d);
-    lasthcms = millis();
-    if (d < 5) {
-      //globalClient->text("dist " + d);
     }
-   }
-   */
+    delay(4);    
+    /*
+      if (millis() > lasthcms + 1000) {
+      auto d = sensor.getDist_cm();
+      EKOX(d);
+      sensor.startMeasure();
+      Serial.println(d);
+      lasthcms = millis();
+      if (d < 5) {
+      //globalClient->text("dist " + d);
+      }
+      }
+    */
 
 
    
@@ -218,12 +187,12 @@ void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventT
   //EKOX(type);
   if(type == WS_EVT_CONNECT){
     EKOT("connect");
-    Serial.println("Websocket client connection received");
+    EKOT("Websocket client connection received");
     myserver.globalClient = client;
  
   } else if(type == WS_EVT_DISCONNECT){
     EKOT("disconnect");
-    Serial.println("Websocket client connection finished");
+    EKOT("Websocket client connection finished");
     myserver.globalClient = NULL;
   } else if(type == WS_EVT_DATA){
     //EKOX(len);
@@ -249,9 +218,9 @@ void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventT
       
 
       /*
-      if(info->opcode == WS_TEXT)
+        if(info->opcode == WS_TEXT)
         client->text("I got your text message");
-      else
+        else
         client->binary("I got your binary message");
       */
 
@@ -289,46 +258,64 @@ void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventT
     }
   }
 }
+#include "code.h"
+String jscode((const char*)bin2c_code_js);
+#include "page.h"
+String page((const char*)bin2c_page_html);
 
+void MyServer::setup() {
+  Serial.begin(115200);
 
-    void MyServer::setup() {
-      Serial.begin(115200);
+  /*
+    if(!SPIFFS.begin()){
+    Serial.println("An Error has occurred while mounting SPIFFS");
+    return;
+    }
+  */
+  WiFi.begin(ssid, password);
  
-      if(!SPIFFS.begin()){
-        Serial.println("An Error has occurred while mounting SPIFFS");
-        return;
-      }
- 
-      WiFi.begin(ssid, password);
- 
-      while (WiFi.status() != WL_CONNECTED) {
-        delay(1000);
-        Serial.println("Connecting to WiFi..");
-      }
- 
-      Serial.println(WiFi.localIP());
-      EKO();
-      ws.onEvent(onWsEvent);
-      server.addHandler(&ws);
-      EKO();
-  
-      server.on("/html", HTTP_GET, [](AsyncWebServerRequest *request){
-        EKO();
-        request->send(200, "text/html", page);
-        //request->send(SPIFFS, "/ws.html", "text/html");
-      });
-
-      server.on("/speed", HTTP_GET, [](AsyncWebServerRequest *request){
-        EKO();
-        request->send(200, "text/plain", "speed received");
-
-        //request->send(SPIFFS, "/ws.html", "text/html");
-      });
-      EKO();
-  
-      server.begin();
-      EKO();
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(1000);
+    EKOT("Connecting to WiFi..");
   }
+  
+  Serial.println(WiFi.localIP());
+
+
+  EKOX(jscode.length());
+  EKOX(page.length());
+  
+  EKOX(jscode);
+  EKOX(page);
+  
+  page.replace("JSCODE", jscode);
+  EKOX(page);
+  
+  
+  EKO();
+  ws.onEvent(onWsEvent);
+  server.addHandler(&ws);
+  EKO();
+  
+  server.on("/html", HTTP_GET, [](AsyncWebServerRequest *request){
+      EKO();
+      EKOX(page);
+        
+      request->send(200, "text/html", page);
+      //request->send(SPIFFS, "/ws.html", "text/html");
+    });
+
+  server.on("/speed", HTTP_GET, [](AsyncWebServerRequest *request){
+      EKO();
+      request->send(200, "text/plain", "speed received");
+
+      //request->send(SPIFFS, "/ws.html", "text/html");
+    });
+  EKO();
+  
+  server.begin();
+  EKOT("server ok");
+}
 
 
 
@@ -336,7 +323,7 @@ void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventT
 struct HCSR04 : Element {
   HC_SR04<echoPinA> &sensor;
   int lastthcms;
-  HCSR04() : sensor(*new HC_SR04<echoPinA>(trigPin)), lastthcms(0) {
+ HCSR04() : sensor(*new HC_SR04<echoPinA>(trigPin)), lastthcms(0) {
     
   }
   
@@ -356,18 +343,58 @@ struct HCSR04 : Element {
         //myserver.globalClient->text(String("distance=") + d);
         myserver.globalClient->text(String("distance_A=") + d);
       }
-   }
+    }
+  }
+  
+};
+
+struct HCSR04_Multiple : Element {
+  HC_SR04_BASE *Slaves[2] = { new HC_SR04<echoPinA>(trigPin), new HC_SR04<echoPinB>(trigPin) };
+  
+  HC_SR04<echoPinC> &sonicMaster;
+  
+ HCSR04_Multiple() : sonicMaster(*new HC_SR04<echoPinC>(trigPin, Slaves, 2)) {
+    EKO();
+    elements.add(this);
+  }
+  
+  void setup() {
+    //sensor.begin();
+    EKO();
+    sonicMaster.beginAsync();
+  }  
+    
+  void loop() {
+    sonicMaster.startAsync(200000);
+    while(!sonicMaster.isFinished())
+      {
+        // Do something usefulle while measureing
+        // all echo pins which doesnt support interrupt will have a 0 result
+      }
+    EKO();
+    for (int i = 0; i < sonicMaster.getNumberOfSensors(); i++) {
+      auto d = sonicMaster.getDist_cm(i);
+      EKOX(d);
+      if (d < 50 && myserver.globalClient != NULL) {
+        //EKO();
+        //myserver.globalClient->text(String("distance=") + d);
+        myserver.globalClient->text(String("distance_") + i + "=" + d);
+      }
+    }
   }
   
 };
 
 HCSR04 hcsr04;
+//HCSR04_Multiple hcsr04m; 
 
 
 void setup() {
+  EKO();
   for (int i = 0; i < elements.getSize(); i++) {
     elements[i]->setup();
   }
+  EKOT("setup ok");
 }
 void loop() {
   for (int i = 0; i < elements.getSize(); i++) {

@@ -1,4 +1,4 @@
-  (() => {
+ (() => {
   const ws = new WebSocket('ws://192.168.1.177:80/ws')
   
 
@@ -12,7 +12,6 @@
     console.log('ws opened on browser')
     ws.send('hello world')
   }
-
 
 
   ws.onmessage = (message) => {

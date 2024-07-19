@@ -1,6 +1,9 @@
 
 $(warning $(CURDIR))
 
+
+x : start
+
 run :
 	arduino-cli core update-index
 	arduino-cli board list
@@ -13,6 +16,10 @@ run :
 start : compile upload
 
 compile :
+
+	bin2c --ultra -H ws/code.h ws/code.js
+	bin2c --ultra -H ws/page.h ws/page.html
+
 	arduino-cli compile --fqbn esp8266:esp8266:nodemcuv2 ws --library $(CURDIR)/ws --library $(CURDIR)
 
 upload :
