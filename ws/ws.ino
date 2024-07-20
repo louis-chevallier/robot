@@ -174,6 +174,9 @@ struct MyServer : Element {
 MyServer myserver;
 
 
+
+
+
 void command(const String &com, const String &param) {
   //EKOX(com);
   //EKOX(param);
@@ -181,6 +184,10 @@ void command(const String &com, const String &param) {
  
   if (tt.get<0>() == "speed") {
     speed(tt.get<1>(), param);
+  }
+  if (tt.get<0>() == "distance") {
+    EKO();
+    distance(tt.get<1>(), param);
   }
   if (tt.get<0>() == "button") {
      EKOT("button");
@@ -294,7 +301,7 @@ void MyServer::setup() {
   
   server.on("/html", HTTP_GET, [](AsyncWebServerRequest *request){
       EKO();
-      EKOX(page);
+      //EKOX(page);
         
       request->send(200, "text/html", page);
       //request->send(SPIFFS, "/ws.html", "text/html");
@@ -356,33 +363,39 @@ struct HCSR04_Multiple : Element {
   void setup() {
     //sensor.begin();
     EKO();
-    sonicMaster.beginAsync();
+    sonicMaster.begin();
   }  
     
   void loop() {
-    sonicMaster.startAsync(200000);
-    while(!sonicMaster.isFinished())
-      {
-        // Do something usefulle while measureing
-        // all echo pins which doesnt support interrupt will have a 0 result
-      }
-    EKO();
-    for (int i = 0; i < sonicMaster.getNumberOfSensors(); i++) {
-      auto d = sonicMaster.getDist_cm(i);
-      EKOX(d);
-      if (d < 50 && myserver.globalClient != NULL) {
-        //EKO();
-        //myserver.globalClient->text(String("distance=") + d);
-        myserver.globalClient->text(String("distance_") + i + "=" + d);
+    if (1>2) {
+      sonicMaster.startMeasure(200000);
+      for (int i = 0; i < sonicMaster.getNumberOfSensors(); i++) {
+        auto d = sonicMaster.getDist_cm(i);
+        if (d < 50 && myserver.globalClient != NULL) {
+          //EKO();
+          //myserver.globalClient->text(String("distance=") + d);
+          myserver.globalClient->text(String("d_") + i + "=" + d);
+        }
       }
     }
   }
-  
 };
 
-HCSR04 hcsr04;
-//HCSR04_Multiple hcsr04m; 
+//HCSR04 hcsr04;
+HCSR04_Multiple hcsr04m; 
 
+void distance(const String &sensor_, const String &param) {
+  EKO();
+  hcsr04m.sonicMaster.startMeasure(200000);
+  //int dd[ hcsr04m.sonicMaster.getNumberOfSensors()];
+  EKO();
+  return;
+  for (int i = 0; i < hcsr04m.sonicMaster.getNumberOfSensors(); i++) {
+    auto d = hcsr04m.sonicMaster.getDist_cm(i);
+    //dd[i] = d;    
+    myserver.globalClient->text(String("distance ") + i + "=" + d);
+  }
+}
 
 void setup() {
   EKO();
