@@ -57,9 +57,6 @@ struct Element {
   virtual void setup() {}
 };
 
-
-
-
 ///////////////////////////////////////
 
 
@@ -109,15 +106,8 @@ MicroTuple<String, String> split(const String &mess, const String &sep = "?") {
   return MicroTuple<String, String>(mess.substring(0, index), mess.substring(index+1));
 } 
 
-void command(const String &com, const String &param) {
-  //EKOX(com);
-  //EKOX(param);
-  auto tt = split(com, "_");
- 
-  if (tt.get<0>() == "speed") {
-    speed(tt.get<1>(), param);
-  }
-}
+void command(const String &com, const String &param);
+
 
 void speed(const String &motor_, const String &param) {
   auto &motor = motor_ == "A" ? motorA : motorB;
@@ -182,6 +172,22 @@ struct MyServer : Element {
 };
 
 MyServer myserver;
+
+
+void command(const String &com, const String &param) {
+  //EKOX(com);
+  //EKOX(param);
+  auto tt = split(com, "_");
+ 
+  if (tt.get<0>() == "speed") {
+    speed(tt.get<1>(), param);
+  }
+  if (tt.get<0>() == "button") {
+     EKOT("button");
+     myserver.globalClient->text("I got your button");
+     
+  }
+}
 
 void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventType type, void * arg, uint8_t *data, size_t len){
   //EKOX(type);

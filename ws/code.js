@@ -2,6 +2,7 @@
   const ws = new WebSocket('ws://192.168.1.177:80/ws')
   
 
+  var button = document.getElementById("button");
   var sliderA = document.getElementById("myRangeA");
   var sliderB = document.getElementById("myRangeB");
   var distA = document.getElementById("distA");
@@ -15,7 +16,7 @@
 
 
   ws.onmessage = (message) => {
-    //console.log(`message received ` + message.data)
+    console.log(`message received ` + message.data)
     const s = message.data.split("=");
     //console.log(s);
     if (s[0] == "distance_A") {
@@ -25,6 +26,7 @@
       if (sliderA.value > 0) {
         ws.send('speed_A?' + (255 - d*5));
       }
+    } else {
     }
   }
 
@@ -32,6 +34,13 @@
     output.innerHTML = this.value;
     ws.send('speed_A?' + this.value);
     //console.log(this.value);
+
+} 
+
+     button.onclick = function() {
+         output.innerHTML = this.value;
+         ws.send('button');
+         //console.log(this.value);
 
 } 
   sliderB.oninput = function() {
