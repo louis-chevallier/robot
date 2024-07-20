@@ -335,7 +335,7 @@ struct HCSR04 : Element {
   }  
     
   void loop() {
-    if (millis() > lasthcms + 100) {
+    if (millis() > lasthcms + 200) {
       sensor.startMeasure();
       auto d = sensor.getDist_cm();
       //EKOX(d);
@@ -352,10 +352,9 @@ struct HCSR04 : Element {
 
 struct HCSR04_Multiple : Element {
   HC_SR04_BASE *Slaves[2] = { new HC_SR04<echoPinA>(trigPin), new HC_SR04<echoPinB>(trigPin) };
-  
   HC_SR04<echoPinC> &sonicMaster;
-  
- HCSR04_Multiple() : sonicMaster(*new HC_SR04<echoPinC>(trigPin, Slaves, 2)) {
+  int lastthcms;
+ HCSR04_Multiple() : sonicMaster(*new HC_SR04<echoPinC>(trigPin, Slaves, 2)), lastthcms(0)  {
     EKO();
     elements.add(this);
   }
@@ -367,7 +366,7 @@ struct HCSR04_Multiple : Element {
   }  
     
   void loop() {
-    if (1>2) {
+    if (millis() > lasthcms + 200) {
       sonicMaster.startMeasure(200000);
       for (int i = 0; i < sonicMaster.getNumberOfSensors(); i++) {
         auto d = sonicMaster.getDist_cm(i);
@@ -377,6 +376,7 @@ struct HCSR04_Multiple : Element {
           myserver.globalClient->text(String("d_") + i + "=" + d);
         }
       }
+      lasthcms = millis();
     }
   }
 };
