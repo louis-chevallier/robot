@@ -28,7 +28,9 @@ upload :
 	plink /dev/ttyUSB0  -serial -sercfg 115200,8,n,1,N
 
 lib :
-	arduino-cli lib search HC_SR04
+#	arduino-cli lib search HC_SR04
 #	arduino-cli lib install FTDebouncer
-	arduino-cli lib list > libs.list
+	arduino-cli lib list --json > libs.json
+	a=`json-reader libs.json 'installed_libraries,*,library,name'`; for e in $$a; do echo $$e; done
+
 
