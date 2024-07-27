@@ -173,6 +173,10 @@ struct MyServer : Element {
 
 MyServer myserver;
 
+
+
+
+
 void command(const String &com, const String &param) {
   //EKOX(com);
   //EKOX(param);

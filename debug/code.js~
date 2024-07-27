@@ -1,0 +1,12 @@
+(() => {
+    const ws = new WebSocket('ws://192.168.1.177:80/ws')
+    var txt = document.getElementById("debug");
+    ws.onopen = () => {
+        console.log('ws opened on browser')
+        ws.send('hello world')
+    }
+    ws.onmessage = (message) => {
+        //console.log(`message received ` + message.data)
+        txt.innerHTML = message.data;
+    console.log("ok");
+})()
