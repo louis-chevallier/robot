@@ -29,10 +29,23 @@
             }
      </style>
 
-
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.3/themes/base/jquery-ui.css">
+    <script src="https://code.jquery.com/jquery-3.7.1.js"></script>
+    <script src="https://code.jquery.com/ui/1.13.3/jquery-ui.js"></script>
 
   </head>
-  <body>
+  <body> 
+ 
+    <p>
+      <label for="amount">range:</label>
+      <input type="text" id="amount" readonly="" style="border:0; color:#f6931f; font-weight:bold;">
+    </p>
+    
+
+    <div id="slider-range"></div>
+ 
+ 
+ 
   hello
   TAG
   <div id="demo"> </div>
@@ -44,7 +57,10 @@
       <input type="range" min="-255" max="255" value="0" class="slider" id="myRangeB">
   </div>  
   <div class="slidecontainer">
-      <input type="range" min="0" max="100" value="0" class="slider" id="distA">
+    <input type="range" min="0" max="100" value="0" class="slider" id="distA">
+  </div>
+  <div class="slidecontainer">
+    <input type="range" min="0" max="100" value="0" class="slider" id="seuil">
   </div>
   <button type="button" id="button">read distance</button> 
   <script>

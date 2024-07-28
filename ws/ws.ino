@@ -173,24 +173,6 @@ struct MyServer : Element {
 
 MyServer myserver;
 
-void command(const String &com, const String &param) {
-  //EKOX(com);
-  //EKOX(param);
-  auto tt = split(com, "_");
- 
-  if (tt.get<0>() == "speed") {
-    speed(tt.get<1>(), param);
-  }
-  if (tt.get<0>() == "distance") {
-    EKO();
-    distance(tt.get<1>(), param);
-  }
-  if (tt.get<0>() == "button") {
-     EKOT("button");
-     myserver.globalClient->text("I got your button");
-     
-  }
-}
 
 void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventType type, void * arg, uint8_t *data, size_t len){
   //EKOX(type);
@@ -350,9 +332,21 @@ struct HCSR04_Multiple : Element {
   HC_SR04_BASE *Slaves[2] = { new HC_SR04<echoPinA>(trigPin), new HC_SR04<echoPinB>(trigPin) };
   HC_SR04<echoPinC> &sonicMaster;
   int lastthcms;
+  int seuil_haut[3] = { 9999, 9999, 9999};
+  int seuil_bas[3] = { 0,0,0};
+  int values[3] = { 9999, 9999, 9999};
+  
  HCSR04_Multiple() : sonicMaster(*new HC_SR04<echoPinC>(trigPin, Slaves, 2)), lastthcms(0)  {
     EKO();
     elements.add(this);
+  }
+
+  void seuil(int sensor, int value, bool haut = true ) {
+    if (haut) {
+        seuil_haut[sensor] = value;
+      } else {
+      seuil_bas[sensor] = value;
+    }
   }
   
   void setup() {
@@ -366,11 +360,13 @@ struct HCSR04_Multiple : Element {
       sonicMaster.startMeasure(200000);
       for (int i = 0; i < sonicMaster.getNumberOfSensors(); i++) {
         auto d = sonicMaster.getDist_cm(i);
-        if (d < 50 && myserver.globalClient != NULL) {
+        if (values[i] < seuil_haut[i]  &&  seuil_haut[i] < d && myserver.globalClient != NULL) {
           //EKO();
           //myserver.globalClient->text(String("distance=") + d);
-          myserver.globalClient->text(String("d_") + i + "=" + d);
+          myserver.globalClient->text(String("alarm_") + i + "_" +  d);
         }
+        values[i] = d;
+        
       }
       lasthcms = millis();
     }
@@ -379,6 +375,9 @@ struct HCSR04_Multiple : Element {
 
 //HCSR04 hcsr04;
 HCSR04_Multiple hcsr04m; 
+
+ void seuil(const String &motor_, const String &param) {
+ }
 
 void distance(const String &sensor_, const String &param) {
   EKO();
@@ -392,6 +391,29 @@ void distance(const String &sensor_, const String &param) {
     myserver.globalClient->text(String("distance ") + i + "=" + d);
   }
 }
+
+void distance(const String &sensor_, const String &param);
+
+void command(const String &com, const String &param) {
+  auto tt = split(com, "_");
+ 
+  if (tt.get<0>() == "speed") {
+    speed(tt.get<1>(), param);
+  } else if (tt.get<0>() == "distance") {
+    EKO();
+    distance(tt.get<1>(), param);
+  } else if (tt.get<0>() == "seuil") {
+    EKO();
+    auto t = split(param, ",");
+    auto sensor = split(t.get<0>(), "=").get<1>().toInt();
+    auto value = split(t.get<1>(), "=").get<1>().toInt();
+    hcsr04m.seuil(sensor, abs(value), value>0);
+  } else if (tt.get<0>() == "button") {
+     EKOT("button");
+     myserver.globalClient->text("I got your button");
+  }
+}
+
 
 void setup() {
   EKO();

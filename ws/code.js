@@ -6,6 +6,7 @@
     var sliderA = document.getElementById("myRangeA");
     var sliderB = document.getElementById("myRangeB");
     var distA = document.getElementById("distA");
+    var seuil = document.getElementById("seuil");
     var output = document.getElementById("demo");
     var d0 = document.getElementById("d0");
     var d1 = document.getElementById("d1");
@@ -18,7 +19,10 @@
         ws.send('hello world')
     }
 
-
+    seuil.oninput = function() {
+        ws.send('seuil?sensor=1,value=' + this.value)
+    }
+    
     ws.onmessage = (message) => {
         //console.log(`message received ` + message.data)
         const s = message.data.split("=");
@@ -76,4 +80,20 @@
     //window.addEventListener("devicemotion", handleMotion);
     window.addEventListener("deviceorientation", handleOrientation);
     console.log("ok");
+
+  $( function() {
+    $( "#slider-range" ).slider({
+      range: true,
+      min: 0,
+      max: 100,
+      values: [ 10, 50 ],
+      slide: function( event, ui ) {
+        $( "#amount" ).val( "$" + ui.values[ 0 ] + " - $" + ui.values[ 1 ] );
+      }
+    });
+    $( "#amount" ).val( "$" + $( "#slider-range" ).slider( "values", 0 ) +
+      " - $" + $( "#slider-range" ).slider( "values", 1 ) );
+  } );
+
+    
 })()
