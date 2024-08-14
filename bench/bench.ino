@@ -27,11 +27,16 @@ MicroTuple<String, String> split(const String &mess, const String &sep = "?") {
 
 #define TIMES_TO_LOOP 1000000
 
-volatile uint16_t ux16, uy16, uresult16, uz16, uw16(0);
+volatile uint16_t ux16, uy16, uresult16, uz16, uw16(1);
 volatile uint32_t ux32, uy32, uresult32;
 volatile uint64_t ux64, uy64, uresult64;
 
 volatile int16_t x16, y16, result16;
+
+
+const int BUF_SIZE = 10000;
+uint16_t buffer[BUF_SIZE];
+auto i_buffer = 0;
 
 uint16_t seed16() {
   return random(0, 0xffff);
@@ -48,6 +53,7 @@ struct MyServer : Element {
 
   MyServer() : server(80), ws("/ws"), globalClient(NULL)
     {
+      EKOT("build myserver");
     }
   
   void setup();
@@ -130,7 +136,11 @@ void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventT
     }
   }
 }
-String page("hello");
+#include "code.h"
+String jscode((const char*)bin2c_bench_js);
+#include "page.h"
+String page((const char*)bin2c_bench_html);
+
 
 void MyServer::setup() {
   WiFi.begin(ssid, password);
@@ -169,6 +179,7 @@ void setup() {
 
   ux16 = seed16();
   uy16 = seed16();
+  uz16 = seed16();
   x16 = ux16;
   y16 = uy16;
   EKO();
@@ -207,11 +218,6 @@ void setup() {
   }
   EKOT("setup ok");
 
-
-
-
-
-  
 }
 void loop() {
   for (int i = 0; i < elements.getSize(); i++) {
@@ -226,11 +232,14 @@ void loop() {
       for(int i = 0; i < loop; i++) {
         uresult16 = ux16 + uy16 * uz16; // 3
         uw16 ++;
+        buffer[i_buffer] = uresult16;
+        i_buffer = (i_buffer + 1) % BUF_SIZE;
+        
       }
       auto micros_end = micros();
       
-      Serial.print("uint16_t microseconds ");
-      Serial.println(micros_end - micros_start);
+      //Serial.print("uint16_t microseconds ");
+      //Serial.println(micros_end - micros_start);
       
     }
     

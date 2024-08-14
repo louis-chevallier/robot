@@ -18,8 +18,8 @@ start : compile upload
 
 compile :
 
-	-bin2c --ultra -H $(PGM)/code.h $(PGM)/code.js
-	-bin2c --ultra -H $(PGM)/page.h $(PGM)/page.html
+	-bin2c --ultra -H $(PGM)/code.h $(PGM)/$(PGM).js
+	-bin2c --ultra -H $(PGM)/page.h $(PGM)/$(PGM).html
 
 	arduino-cli compile --fqbn esp8266:esp8266:nodemcuv2 $(PGM) --library $(CURDIR)/$(PGM) --library $(CURDIR)
 
