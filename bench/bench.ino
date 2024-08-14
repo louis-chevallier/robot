@@ -27,7 +27,7 @@ MicroTuple<String, String> split(const String &mess, const String &sep = "?") {
 
 #define TIMES_TO_LOOP 1000000
 
-volatile uint16_t ux16, uy16, uresult16, uz16;
+volatile uint16_t ux16, uy16, uresult16, uz16, uw16(0);
 volatile uint32_t ux32, uy32, uresult32;
 volatile uint64_t ux64, uy64, uresult64;
 
@@ -174,13 +174,13 @@ void setup() {
   EKO();
 
   auto
-    nmb_op = 400000,
+    nmb_op = 800000,
     block = 3,
     loop =  nmb_op/block;
   {
     uint64_t micros_start  = micros();
     for(int i = 0; i < loop; i++) {
-      uresult16 = ux16 + uy16 * uz16; // 3
+      uresult16 = ux16 + uy16 / uz16; // 3
       uw16 ++;
     }
     auto micros_end = micros();
@@ -216,6 +216,25 @@ void setup() {
 void loop() {
   for (int i = 0; i < elements.getSize(); i++) {
     elements[i]->loop();
+
+    auto
+      nmb_op = 800000,
+      block = 3,
+      loop =  nmb_op/block;
+    {
+      uint64_t micros_start  = micros();
+      for(int i = 0; i < loop; i++) {
+        uresult16 = ux16 + uy16 * uz16; // 3
+        uw16 ++;
+      }
+      auto micros_end = micros();
+      
+      Serial.print("uint16_t microseconds ");
+      Serial.println(micros_end - micros_start);
+      
+    }
+    
+    
   }
 }
 
