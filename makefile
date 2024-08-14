@@ -1,6 +1,7 @@
 
 $(warning $(CURDIR))
 
+PGM?=ws
 
 x : start
 
@@ -17,14 +18,14 @@ start : compile upload
 
 compile :
 
-	bin2c --ultra -H ws/code.h ws/code.js
-	bin2c --ultra -H ws/page.h ws/page.html
+	-bin2c --ultra -H $(PGM)/code.h $(PGM)/code.js
+	-bin2c --ultra -H $(PGM)/page.h $(PGM)/page.html
 
-	arduino-cli compile --fqbn esp8266:esp8266:nodemcuv2 ws --library $(CURDIR)/ws --library $(CURDIR)
+	arduino-cli compile --fqbn esp8266:esp8266:nodemcuv2 $(PGM) --library $(CURDIR)/$(PGM) --library $(CURDIR)
 
 upload :
 	-arduino-cli core list
-	arduino-cli upload -p /dev/ttyUSB0 --fqbn esp8266:esp8266:nodemcuv2 ws
+	arduino-cli upload -p /dev/ttyUSB0 --fqbn esp8266:esp8266:nodemcuv2 $(PGM)
 	plink /dev/ttyUSB0  -serial -sercfg 115200,8,n,1,N
 
 lib :
