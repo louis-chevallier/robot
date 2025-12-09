@@ -27,14 +27,14 @@ MicroTuple<String, String> split(const String &mess, const String &sep = "?") {
 
 #define TIMES_TO_LOOP 1000000
 
-volatile uint16_t ux16, uy16, uresult16, uz16, uw16(1);
+volatile uint16_t ux16, uy16, uresult16, uz16, uw16(1), uuu(5);
 volatile uint32_t ux32, uy32, uresult32;
 volatile uint64_t ux64, uy64, uresult64;
 
 volatile int16_t x16, y16, result16;
 
 
-const int BUF_SIZE = 10000;
+const int BUF_SIZE = 20000;
 uint16_t buffer[BUF_SIZE];
 auto i_buffer = 0;
 
@@ -44,7 +44,7 @@ uint16_t seed16() {
 
 
 struct MyServer : Element {
-  const char* ssid = "CHEVALLIER_BORDEAU"; //Enter Wi-Fi SSID
+  const char* ssid = "TENDA"; //Enter Wi-Fi SSID
   const char* password =  "9697abcdea"; //Enter Wi-Fi Password
  
   AsyncWebServer server;
@@ -169,6 +169,14 @@ void command(const String &com, const String &param) {
   auto tt = split(com, "_");
 }
 
+#define EXP(e) (e * (e+2) / (e+3))
+#define EXP1(e) (EXP(e) * (EXP(e)+2) / (EXP(e)+3))
+#define EXP2(e) (EXP1(e) * (EXP1(e)+2) / (EXP1(e)+3))
+#define EXP3(e) (EXP2(e) * (EXP2(e)+2) / (EXP2(e)+3))
+#define EXP4(e) (EXP3(e) * (EXP3(e)+2) / (EXP3(e)+3))
+#define EXP5(e) (EXP4(e) * (EXP4(e)+2) / (EXP4(e)+3))
+
+
 
 void setup() {
   Serial.begin(115200);
@@ -184,6 +192,8 @@ void setup() {
   y16 = uy16;
   EKO();
 
+
+  //uuu = EXP5(ux16+2);
   auto
     nmb_op = 800000,
     block = 3,

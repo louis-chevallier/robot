@@ -6,10 +6,12 @@
   Complete project details at https://RandomNerdTutorials.com/esp8266-nodemcu-dc-motor-l298n-motor-driver-control-speed-direction/
 *********/
 
-#include <ESP8266WiFi.h>
-#include <ESP8266WebServer.h>
-#include <DallasTemperature.h>
-#include <OneWire.h>
+#include "ESPAsyncWebServer.h"
+
+//#include <ESP8266WiFi.h>
+//#include <ESP8266WebServer.h>
+//#include <DallasTemperature.h>
+//#include <OneWire.h>
 #include <List.hpp>
 #include <DHT.h>
 #include <Hash.h>
