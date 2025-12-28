@@ -14,7 +14,13 @@ run :
 	arduino-cli core install esp8266:esp8266
 #	arduino-cli compile --fqbn arduino:samd:mkr1000 MyFirstSketch
 
-start : compile upload
+start : attelage
+
+#start : compile upload
+
+
+attelage :
+	python attelage.py
 
 compile :
 
