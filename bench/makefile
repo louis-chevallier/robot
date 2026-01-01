@@ -1,5 +1,5 @@
 
-PGM=bench
+
 
 start :
-	cd ..; PGM=bench make start
+	cd ..; PGM=bench make compile

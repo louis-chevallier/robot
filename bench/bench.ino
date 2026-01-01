@@ -1,8 +1,10 @@
 #include "ESPAsyncWebServer.h"
 #include <L298N.h>
-#include <HC_SR04.h>
+
 #include "microTuple.h"
 #include <List.hpp>
+#include <UltraPing.h>
+
 
 String S;
 
@@ -168,14 +170,6 @@ void MyServer::setup() {
 void command(const String &com, const String &param) {
   auto tt = split(com, "_");
 }
-
-#define EXP(e) (e * (e+2) / (e+3))
-#define EXP1(e) (EXP(e) * (EXP(e)+2) / (EXP(e)+3))
-#define EXP2(e) (EXP1(e) * (EXP1(e)+2) / (EXP1(e)+3))
-#define EXP3(e) (EXP2(e) * (EXP2(e)+2) / (EXP2(e)+3))
-#define EXP4(e) (EXP3(e) * (EXP3(e)+2) / (EXP3(e)+3))
-#define EXP5(e) (EXP4(e) * (EXP4(e)+2) / (EXP4(e)+3))
-
 
 
 void setup() {

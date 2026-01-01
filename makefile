@@ -14,7 +14,11 @@ run :
 	arduino-cli core install esp8266:esp8266
 #	arduino-cli compile --fqbn arduino:samd:mkr1000 MyFirstSketch
 
-start : attelage
+
+install :
+	arduino-cli lib install UltraPing
+
+startx : attelage
 
 #start : compile upload
 
@@ -27,7 +31,7 @@ compile :
 	-bin2c --ultra -H $(PGM)/code.h $(PGM)/$(PGM).js
 	-bin2c --ultra -H $(PGM)/page.h $(PGM)/$(PGM).html
 
-	arduino-cli compile --fqbn esp8266:esp8266:nodemcuv2 $(PGM) --library $(CURDIR)/$(PGM) --library $(CURDIR)
+	arduino-cli compile --fqbn esp8266:esp8266:nodemcuv2 $(PGM) --library $(CURDIR)/.. 
 
 upload :
 	-arduino-cli core list
